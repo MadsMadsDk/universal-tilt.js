@@ -30,6 +30,7 @@ export default class UniversalTilt {
 
   isMobile() {
     if (
+      typeof window !== 'undefined' &&
       window.DeviceMotionEvent &&
       'ontouchstart' in document.documentElement &&
       this.settings.mobile
@@ -42,9 +43,11 @@ export default class UniversalTilt {
     if (this.isMobile()) {
       window.addEventListener('devicemotion', e => this.onDeviceMove(e));
     } else {
-      if (this.settings['position-base'] === 'element') {
+      if (typeof this.settings['position-base'] === `object`) {
+        this.base = this.settings['position-base'];
+      } else if (this.settings['position-base'] === 'element') {
         this.base = this.element;
-      } else if (this.settings['position-base'] === 'window') {
+      } else if (this.settings['position-base'] === 'window' && typeof window !== 'undefined') {
         this.base = window;
       }
 
@@ -64,22 +67,26 @@ export default class UniversalTilt {
   }
 
   onMouseMove(e) {
-    this.event = e;
-    this.updateElementPosition();
-    window.requestAnimationFrame(() => this.update());
+    if (typeof window !== 'undefined') {
+      this.event = e;
+      this.updateElementPosition();
+      window.requestAnimationFrame(() => this.update());
 
-    if (typeof this.settings.onMouseMove === 'function') {
-      this.settings.onMouseMove(this.element);
+      if (typeof this.settings.onMouseMove === 'function') {
+        this.settings.onMouseMove(this.element);
+      }
     }
   }
 
   onMouseLeave(e) {
-    this.transitions();
+    if (typeof window !== 'undefined') {
+      this.transitions();
 
-    window.requestAnimationFrame(() => this.reset());
+      window.requestAnimationFrame(() => this.reset());
 
-    if (typeof this.settings.onMouseLeave === 'function') {
-      this.settings.onMouseLeave(this.element);
+      if (typeof this.settings.onMouseLeave === 'function') {
+        this.settings.onMouseLeave(this.element);
+      }
     }
   }
 
@@ -102,7 +109,7 @@ export default class UniversalTilt {
     if (this.settings.reset) {
       this.element.style.transform = `perspective(${
         this.settings.perspective
-      }px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      }px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1) translate3d(0, 0, 0)`;
     }
 
     if (this.settings.shine && !this.settings['shine-save']) {
@@ -117,8 +124,8 @@ export default class UniversalTilt {
     let x, y;
 
     if (this.isMobile()) {
-      x = event.accelerationIncludingGravity.x / 4;
-      y = event.accelerationIncludingGravity.y / 4;
+      x = this.event.accelerationIncludingGravity.x / 4;
+      y = this.event.accelerationIncludingGravity.y / 4;
 
       let stateX, stateY;
 
@@ -152,7 +159,7 @@ export default class UniversalTilt {
       if (this.settings['position-base'] === 'element') {
         x = (this.event.clientX - this.left) / this.width;
         y = (this.event.clientY - this.top) / this.height;
-      } else if (this.settings['position-base'] === 'window') {
+      } else if (this.settings['position-base'] === 'window' && typeof window !== 'undefined') {
         x = this.event.clientX / window.innerWidth;
         y = this.event.clientY / window.innerHeight;
       }
@@ -188,15 +195,24 @@ export default class UniversalTilt {
 
     this.element.style.transform = `perspective(${this.settings.perspective}px)
       rotateX(${
-        this.settings.disabled && this.settings.disabled.toUpperCase() === 'X'
+        this.settings.disabled || this.settings.disabled.toUpperCase() === 'X'
           ? 0
           : values.tiltY
       }deg)
       rotateY(${
-        this.settings.disabled && this.settings.disabled.toUpperCase() === 'Y'
+        this.settings.disabled || this.settings.disabled.toUpperCase() === 'Y'
           ? 0
           : values.tiltX
       }deg)
+      translate3d(${
+        this.settings.translate && this.settings.translateFactor && typeof window !== `undefined`
+        ? (this.event.clientX - (window.innerWidth / 2)) * this.settings.translateFactor
+        : 0
+      }px ,${
+        this.settings.translate && this.settings.translateFactor && typeof window !== `undefined`
+        ? (this.event.clientY - (window.innerHeight / 2)) * this.settings.translateFactor
+        : 0
+      }px, 0)
       scale3d(${this.settings.scale}, ${this.settings.scale}, ${
       this.settings.scale
     })`;
@@ -274,7 +290,7 @@ export default class UniversalTilt {
 
   settings(settings) {
     const defaults = {
-      'position-base': 'element', // element or window
+      'position-base': 'element', // element, window or DOM element
       reset: true, // enable/disable element position reset after mouseout
       mobile: true, // enable/disable tilt effect on mobile devices with gyroscope (tilt effect on touch is always enabled)
 
@@ -287,6 +303,8 @@ export default class UniversalTilt {
       scale: 1.0, // element scale on mouseover
       disabled: null, // disable axis (X or Y)
       reverse: false, // reverse tilt effect directory
+      translate: false, // transform element position to follow mouse
+      translateFactor: 0.01, // the factor by which the element is transformed
 
       speed: 300, // transition speed
       easing: 'cubic-bezier(.03, .98, .52, .99)', // transition easing

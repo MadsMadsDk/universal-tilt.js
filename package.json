@@ -4,7 +4,7 @@
   "description": "Parallax tilt effect library",
   "main": "lib/universal-tilt.min.js",
   "scripts": {
-    "build": "webpack --env dev && webpack --env build && npm run test",
+    "build": "webpack --env dev && webpack --env build",
     "dev": "webpack --progress --colors --watch --env dev",
     "test": "mocha -r @babel/register --colors ./test/*.spec.js",
     "test:watch": "mocha -r @babel/register --colors -w ./test/*.spec.js",

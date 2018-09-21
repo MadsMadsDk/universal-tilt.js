@@ -195,12 +195,12 @@ export default class UniversalTilt {
 
     this.element.style.transform = `perspective(${this.settings.perspective}px)
       rotateX(${
-        this.settings.disabled && this.settings.disabled.toUpperCase() === 'X'
+        this.settings.disabled && this.settings.disabled.toString().toUpperCase() === 'X'
           ? 0
           : `${this.settings.disabled ? 0 : values.tiltY}`
       }deg)
       rotateY(${
-        this.settings.disabled && this.settings.disabled.toUpperCase() === 'Y'
+        this.settings.disabled && this.settings.disabled.toString().toUpperCase() === 'Y'
           ? 0
           : `${this.settings.disabled ? 0 : values.tiltX}`
       }deg)
